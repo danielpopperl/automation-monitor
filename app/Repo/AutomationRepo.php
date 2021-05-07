@@ -1,0 +1,199 @@
+<?php
+
+namespace App\Repo;
+
+use App\Models\Automation;
+use Illuminate\Support\Facades\Http;
+use GuzzleHttp\Client;
+
+
+class AutomationRepo
+{
+
+    public static function AutomationJob(){
+
+        //$a = [];
+        //$lastKey = array();
+
+        $automations = [
+            'Automation' =>
+                    ['name' => 'Evento_boletoAvulso_01_embracon',
+                    'customerKey' => '558d88d0-0d1a-aa02-1e85-739a0b18a96f'],
+
+                    ['name' => 'Teste_relatorio_automation',
+                    'customerKey' => '339ad08a-8995-20a1-6e0d-ed96d472c1c3'],
+
+                    ['name' => 'Automation_Import_Flat',
+                    'customerKey' => 'ecfe9642-463a-fbd0-2466-c9143d70f3f4'],
+
+                    ['name' => 'Automation Inadimplente',
+                    'customerKey' => '3a81ff80-42a2-bb30-83ef-0c995f184ad0']
+        ];
+
+
+        // TOKEN SALESFORCE REST
+        $urlAuthenticate = env('URL_AUTH_REST');
+
+        $login['grant_type'] = "client_credentials";
+        $login['client_id'] = env('CLIENT_ID');
+        $login['client_secret'] = env('CLIENT_SECRET');
+
+        $headerLogin = array(
+                    'Content-Type' => 'application/json',
+                );
+
+        $responseLogin = Http::withHeaders($headerLogin)->post($urlAuthenticate, $login);
+        $statusLogin = $responseLogin->getStatusCode();
+        // FIM TOKEN SALESFORCE REST
+
+        $bodyLogin = $responseLogin->getBody()->__toString();
+        $returnLogin = json_decode($bodyLogin);
+
+        if($statusLogin == 200){
+
+            foreach($automations as $automation){
+                //$requestSOAP = new Request;
+                $urlSOAP = env('URL_AUTH_SOAP');
+                $headersSOAP = array('headers'=>[
+                            'Content-Type' => 'text/xml',
+                            'SOAPAction' => 'Retrieve'
+                            ]);
+
+                $bodySOAP = '<?xml version="1.0" encoding="utf-8"?>
+                <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+                <s:Header>
+                    <fueloauth xmlns="http://exacttarget.com">'. $returnLogin->access_token .'</fueloauth>
+                </s:Header>
+                <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <RetrieveRequestMsg xmlns="http://exacttarget.com/wsdl/partnerAPI">
+                        <RetrieveRequest>
+                            <ObjectType>AutomationInstance</ObjectType>
+                            <Properties>Automation</Properties>
+                            <Properties>Name</Properties>
+                            <Properties>Description</Properties>
+                            <Properties>RecurrenceID</Properties>
+                            <Properties>CustomerKey</Properties>
+                            <Properties>IsActive</Properties>
+                            <Properties>CreatedDate</Properties>
+                            <Properties>ModifiedDate</Properties>
+                            <Properties>Status</Properties>
+                                    <Properties>StartTime</Properties>
+                                    <Properties>Sequence</Properties>
+                                    <Properties>SequenceID</Properties>
+                            <Filter xsi:type="SimpleFilterPart">
+                            <Property>CustomerKey</Property>
+                            <SimpleOperator>equals</SimpleOperator>
+                            <Value>'. $automation['customerKey'] .'</Value>
+                            </Filter>
+                        </RetrieveRequest>
+                    </RetrieveRequestMsg>
+                </s:Body>
+                </s:Envelope>';
+
+                $clientSOAP = new Client();
+
+                $headersSOAP = [
+                    'headers' => [
+                        'Content-Type' => 'text/xml',
+                        'SOAPAction' => 'Retrieve'
+                    ],
+                    'body' => $bodySOAP,
+                ];
+
+                $responseSOAP = $clientSOAP->request("POST", $urlSOAP, $headersSOAP);
+
+                $bodyResponseSOAP = $responseSOAP->getBody();
+
+                $xmlSOAP = new \SimpleXMLElement($bodyResponseSOAP);
+                $jsonEncode = json_encode($xmlSOAP->asXML());
+                $jsonDecode = json_decode($jsonEncode);
+
+                // SUBSTRING PARA RETIRAR DO XML APENAS A TAG RESPONSE
+                $subXML = "<RetrieveResponseMsg>".substr($jsonDecode, strpos($jsonDecode, "<Results"), strrpos($jsonDecode, "</Results>"));
+                $subXML2 = substr($subXML, strpos($subXML, "<Results"), strrpos($subXML, "</Results>") + 10);
+
+                $explode = explode("xsi:", $subXML2);
+                $implode = implode(" ", $explode);
+                $implode = "<RetrieveResponseMsg>" . $implode . ">";
+
+                $xmlSOAP2 = simplexml_load_string($implode) or die("Error: Cannot create object");
+
+                foreach( $xmlSOAP2->Results as $item ){
+                    $date = date( 'Y-m-d', strtotime($item->StartTime) );
+                    $dateF = date( 'd-m-Y H:i:s', strtotime($item->StartTime) );
+                    $today = date( 'Y-m-d', strtotime( now() ) );
+                    $todayMinus = date( 'Y-m-d', strtotime('-7 day', strtotime(now())) );
+
+                    if ($date > $todayMinus && $date < $today) {
+                        $save = new Automation();
+                        $save->automation = $item->Name;
+                        $save->customerKey = $item->CustomerKey;
+                        $save->status = $item->Status;
+                        $save->statusMessage = $item->StatusMessage;
+                        $save->startTime = $item->StartTime;
+                        $save->save();
+                    }
+
+
+                    // if( $date == $today && $item->Status == 1 ){
+                    //     $a[] = [ 'Response' => [
+                    //             'Automation' => $item->Name,
+                    //             'Date' => $item->StartTime,
+                    //             'Status' => 'Complete'
+                    //     ]];
+                    // }else if ( $date == $today && $item->Status == 2){
+                    //     $a[] = [ 'Response' => [
+                    //             'Automation' => $item->Name,
+                    //             'Date' => $item->StartTime,
+                    //             'Status' => 'Error'
+                    //     ]];
+                    // }
+                }
+
+
+                //$sortKey = array();
+                //$sortKey = asort ($a, 'Date');
+                //$sortKey = array_sort($a, 'Date', SORT_ASC);
+                //$sortKey = Arr::sortByKeys($a, 'Date');
+
+
+                // CHECA SE ARRAY NÃO É VAZIA
+                //if(!empty($a) ){
+                //    array_push($lastKey, array_pop($a));
+                //}
+
+
+                //$a = array();
+                //$sortKey = array();
+
+            }// FIM FOREACH
+
+
+            // $lastKeyjsonEncode = json_encode($lastKey);
+            // $lastKeyJsonDecode = json_decode($lastKeyjsonEncode, true);
+
+            // foreach ($automations as $key => $value) {
+            //     foreach( $lastKeyJsonDecode as $key2 => $value2 ){
+            //         if( in_array ( $value['name'], $lastKeyJsonDecode[$key2]['Response']['Automation']) == FALSE){
+            //             $today = date('d-m-Y', strtotime(now()));
+
+            //             echo 'NÃO RODOU DIA: ' . $today . '<br/>';
+            //             echo 'Automação: ' . $value['name'];
+            //             echo '<br/>';
+            //             echo 'CustomerKey: ' . $value['customerKey'];
+            //             echo '<br/>' . '<br/>';
+            //         }if( in_array ( $value['name'], $lastKeyJsonDecode[$key2]['Response']['Automation']) == TRUE
+            //             && $lastKeyJsonDecode[$key2]['Response']['Status'] == 2){
+            //             $today = date('d-m-Y', strtotime(now()));
+
+            //             echo 'RODOU COM ERRO DIA: ' . $today . '<br/>';
+            //             echo 'Automação: ' . $value['name'];
+            //             echo '<br/>';
+            //             echo 'CustomerKey: ' . $value['customerKey'];
+            //             echo '<br/>' . '<br/>';
+            //         }
+            //     }
+            // }
+        }//FIM STATUS LOGIN = 200
+    }
+}
