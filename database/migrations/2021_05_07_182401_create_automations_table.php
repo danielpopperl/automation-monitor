@@ -15,6 +15,14 @@ class CreateAutomationsTable extends Migration
     {
         Schema::create('automations', function (Blueprint $table) {
             $table->id();
+            $table->boolean('warning')->default(false);
+            $table->string('automation');
+            $table->string('customerKey');
+            $table->integer('status');
+            $table->string('statusMessage');
+            $table->dateTime('startTime');
+            $table->string('dataExtension');
+            $table->integer('dataExtension_count');
             $table->timestamps();
         });
     }

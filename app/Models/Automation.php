@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
 
+
 class Automation extends Model
 {
     use Notifiable;
@@ -38,5 +39,10 @@ class Automation extends Model
 
     public function scopeYesterday($query) {
         return $query->whereDate('startTime', now()->subDay(1));
+    }
+
+    public function scopeToday($query)
+    {
+        return $query->whereDate('startTime', now());
     }
 }

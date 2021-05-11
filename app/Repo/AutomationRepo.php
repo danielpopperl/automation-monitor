@@ -18,16 +18,20 @@ class AutomationRepo
         $automations = [
             'Automation' =>
                     ['name' => 'Evento_boletoAvulso_01_embracon',
-                    'customerKey' => '558d88d0-0d1a-aa02-1e85-739a0b18a96f'],
+                    'customerKey' => '558d88d0-0d1a-aa02-1e85-739a0b18a96f',
+                    'dataExtension' => '52260D91-96A5-442D-812D-C81ED6A23D91'],
 
                     ['name' => 'Teste_relatorio_automation',
-                    'customerKey' => '339ad08a-8995-20a1-6e0d-ed96d472c1c3'],
+                    'customerKey' => '339ad08a-8995-20a1-6e0d-ed96d472c1c3',
+                    'dataExtension' => 'E87464D0-0750-4DDF-8E66-C5437174D39F'],
 
                     ['name' => 'Automation_Import_Flat',
-                    'customerKey' => 'ecfe9642-463a-fbd0-2466-c9143d70f3f4'],
+                    'customerKey' => 'ecfe9642-463a-fbd0-2466-c9143d70f3f4',
+                    'dataExtension' => 'E87464D0-0750-4DDF-8E66-C5437174D39F'],
 
                     ['name' => 'Automation Inadimplente',
-                    'customerKey' => '3a81ff80-42a2-bb30-83ef-0c995f184ad0']
+                    'customerKey' => '3a81ff80-42a2-bb30-83ef-0c995f184ad0',
+                    'dataExtension' => 'E87464D0-0750-4DDF-8E66-C5437174D39F']
         ];
 
 
@@ -49,10 +53,19 @@ class AutomationRepo
         $bodyLogin = $responseLogin->getBody()->__toString();
         $returnLogin = json_decode($bodyLogin);
 
+
         if($statusLogin == 200){
 
             foreach($automations as $automation){
-                //$requestSOAP = new Request;
+                $dataExtension = Http::withHeaders($headerLogin)
+                    ->withToken($returnLogin->access_token)
+                    ->get('https://mc6ttz-frz9j0jq5lw06m-j0gd9q.rest.marketingcloudapis.com/data/v1/customobjectdata/key/'.$automation['dataExtension'].'/rowset?$page=1&$pagesize=1');
+                $bodyDE = $dataExtension->getBody()->__toString();
+                $returnDE = json_decode($bodyDE);
+
+                //dd($returnDE);
+
+
                 $urlSOAP = env('URL_AUTH_SOAP');
                 $headersSOAP = array('headers'=>[
                             'Content-Type' => 'text/xml',
@@ -120,17 +133,19 @@ class AutomationRepo
 
                 foreach( $xmlSOAP2->Results as $item ){
                     $date = date( 'Y-m-d', strtotime($item->StartTime) );
-                    $dateF = date( 'd-m-Y H:i:s', strtotime($item->StartTime) );
+                    //$dateF = date( 'd-m-Y H:i:s', strtotime($item->StartTime) );
                     $today = date( 'Y-m-d', strtotime( now() ) );
-                    $todayMinus = date( 'Y-m-d', strtotime('-7 day', strtotime(now())) );
+                    $todayMinus = date( 'Y-m-d', strtotime('-1 days', strtotime(now())) );
 
-                    if ($date > $todayMinus && $date < $today) {
+                    if ($date == $todayMinus) {
                         $save = new Automation();
                         $save->automation = $item->Name;
                         $save->customerKey = $item->CustomerKey;
                         $save->status = $item->Status;
                         $save->statusMessage = $item->StatusMessage;
                         $save->startTime = $item->StartTime;
+                        $save->dataExtension = $automation['dataExtension'];
+                        $save->dataExtension_count = $returnDE->count;
                         $save->save();
                     }
 

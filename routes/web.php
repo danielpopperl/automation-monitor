@@ -2,7 +2,8 @@
 
 use App\Http\Controllers\AutomationController;
 use App\Models\Automation;
-use App\Notifications\AutomationNotification;
+use App\Notifications\AutomationError;
+use App\Notifications\AutomationInfo;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/a', function () {
 
-    $automations = Automation::yesterday()->OrderBy('automation', 'asc')->get();
+    $automations = Automation::OrderBy('automation', 'asc')->get();
     $names = [];
     $name = null;
     foreach($automations as $automation){
@@ -28,7 +29,7 @@ Route::get('/a', function () {
                 array_push($names, $name);
         } else {
             if($name !== $automation->automation) {
-                    $name = $automation->automation;
+                $name = $automation->automation;
                 array_push($names, $name);
             }
         }
@@ -36,10 +37,18 @@ Route::get('/a', function () {
 
     foreach($names as $name) {
         $autos = new Automation();
-        $autos = Automation::where('automation', $name)->yesterday()->orderBy('startTime','desc')->first();
+        $autos = Automation::where('automation', $name)->today()->orderBy('startTime', 'desc')->first();
 
-        $autos->notify(new AutomationNotification($autos));
+        if($autos){
+            $autos->notify(new AutomationInfo($autos));
+        }else{
+            $autos = Automation::where('automation', $name)->yesterday()->orderBy('startTime', 'desc')->first();
+            if ($autos) {
+                $autos->notify(new AutomationError($autos));
+            }
+        }
     }
+
 
 
     // $automations = new Automation();
