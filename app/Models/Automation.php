@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
-
+use Illuminate\Support\Facades\DB;
 
 class Automation extends Model
 {
@@ -44,11 +44,12 @@ class Automation extends Model
         return $query->whereDate('startTime', now());
     }
 
-    public function scopeNotInAutomation($query) {
+    public function scopeMonitorDaily($query) {
         return $query->whereNotIn('automation', ['PR_Aviso_Boleto_Massivo']);
     }
 
-    public function scopeInAutomation($query) {
-        return $query->whereIn('automation', ['PR_Aviso_Boleto_Massivo'])->whereDate();
+    public function scopeNotMonitorDaily($query) {
+        return $query->whereIn('automation', ['PR_Aviso_Boleto_Massivo'])
+                     ->whereDay('startTime', '=', '2', 'or', '7', 'or', '12', 'or', '17', 'or', '11') ;
     }
 }

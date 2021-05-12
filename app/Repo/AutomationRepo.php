@@ -19,15 +19,18 @@ class AutomationRepo
             'Automation' =>
                     ['name' => 'PR_Aviso_Boleto_Massivo',
                     'customerKey' => '9330a95e-f0f9-b824-49d2-377c85b58629',
-                    'dataExtension' => 'B76765BE-07C4-4CF3-A167-E177754E4778'],
+                    'dataExtension' => 'TB00_Boleto_Massivo_Prod_Aviso',
+                    'dataExtension_CK' => 'B76765BE-07C4-4CF3-A167-E177754E4778'],
 
                     ['name' => 'Automation_Import_Flat',
                     'customerKey' => 'ecfe9642-463a-fbd0-2466-c9143d70f3f4',
-                    'dataExtension' => 'E87464D0-0750-4DDF-8E66-C5437174D39F'],
+                    'dataExtension' => 'TB00_Flat_Geral',
+                    'dataExtension_CK' => 'E87464D0-0750-4DDF-8E66-C5437174D39F'],
 
-                    ['name' => 'Automation Inadimplente',
-                    'customerKey' => '3a81ff80-42a2-bb30-83ef-0c995f184ad0',
-                    'dataExtension' => 'E87464D0-0750-4DDF-8E66-C5437174D39F']
+                    // ['name' => 'Automation Inadimplente',
+                    // 'customerKey' => '3a81ff80-42a2-bb30-83ef-0c995f184ad0',
+                    // 'dataExtension' => 'Teste_DE',
+                    // 'dataExtension_CK' => 'E87464D0-0750-4DDF-8E66-C5437174D39F']
         ];
 
 
@@ -56,7 +59,7 @@ class AutomationRepo
             foreach($automations as $automation){
                 $dataExtension = Http::withHeaders($headerLogin)
                     ->withToken($returnLogin->access_token)
-                    ->get('https://mc6ttz-frz9j0jq5lw06m-j0gd9q.rest.marketingcloudapis.com/data/v1/customobjectdata/key/'.$automation['dataExtension'].'/rowset?$page=1&$pagesize=1');
+                    ->get('https://mc6ttz-frz9j0jq5lw06m-j0gd9q.rest.marketingcloudapis.com/data/v1/customobjectdata/key/'.$automation['dataExtension_CK'].'/rowset?$page=1&$pagesize=1');
                 $bodyDE = $dataExtension->getBody()->__toString();
                 $returnDE = json_decode($bodyDE);
 
@@ -131,7 +134,7 @@ class AutomationRepo
                     $today = date( 'Y-m-d', strtotime( now() ) );
                     $todayMinus = date( 'Y-m-d', strtotime('-1 days', strtotime(now())) );
 
-                    if ($date == $today) {
+                    if ($date >= $todayMinus) {
                         $save = new Automation();
                         $save->automation = $item->Name;
                         $save->customerKey = $item->CustomerKey;
@@ -139,6 +142,7 @@ class AutomationRepo
                         $save->statusMessage = $item->StatusMessage;
                         $save->startTime = $item->StartTime;
                         $save->dataExtension = $automation['dataExtension'];
+                        $save->dataExtension_CK = $automation['dataExtension_CK'];
                         $save->dataExtension_count = $returnDE->count;
                         $save->save();
                     }

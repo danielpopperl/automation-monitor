@@ -3,10 +3,9 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\SlackMessage;
+
 
 class AutomationError extends Notification
 {
@@ -37,15 +36,16 @@ class AutomationError extends Notification
             ->error()
             ->to('learning')
             ->from('Salesforce Automation', ':warning')
-            ->content('*Not Run - Automation:* ' . $notifiable->automation)
+            ->content('*Not Ran - Automation:* ' . $notifiable->automation)
             ->attachment(function ($attachment) use ($url, $notifiable) {
-                $attachment->title('Dados', $url)
+                $attachment->title('', $url)
                     ->fields([
                         'Automation' => $notifiable->automation,
                         'Last Run' => date('d-m-Y H:i:s', strtotime('+3 hours', strtotime($notifiable->startTime))),
                         'CustomerKey' => $notifiable->customerKey,
-                        'Status' => $notifiable->statusMessage,
+                        '' => '',
                         'Data Extension' => $notifiable->dataExtension,
+                        'Data Extension CustomerKey' => $notifiable->dataExtension_CK,
                         'Rows Data Extension' => $notifiable->dataExtension_count,
                     ]);
             });

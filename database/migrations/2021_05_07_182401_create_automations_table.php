@@ -22,6 +22,7 @@ class CreateAutomationsTable extends Migration
             $table->string('statusMessage');
             $table->dateTime('startTime');
             $table->string('dataExtension');
+            $table->string('dataExtension_CK');
             $table->integer('dataExtension_count');
             $table->timestamps();
         });
