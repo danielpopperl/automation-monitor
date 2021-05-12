@@ -23,8 +23,7 @@ class Automation extends Model
         'startTime'=> 'datetime'
     ];
 
-    public function routeNotificationForSlack($notification)
-    {
+    public function routeNotificationForSlack($notification) {
         return env('LOG_SLACK_WEBHOOK_URL');
     }
 
@@ -41,8 +40,15 @@ class Automation extends Model
         return $query->whereDate('startTime', now()->subDay(1));
     }
 
-    public function scopeToday($query)
-    {
+    public function scopeToday($query) {
         return $query->whereDate('startTime', now());
+    }
+
+    public function scopeNotInAutomation($query) {
+        return $query->whereNotIn('automation', ['PR_Aviso_Boleto_Massivo']);
+    }
+
+    public function scopeInAutomation($query) {
+        return $query->whereIn('automation', ['PR_Aviso_Boleto_Massivo'])->whereDate();
     }
 }

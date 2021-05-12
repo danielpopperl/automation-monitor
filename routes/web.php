@@ -37,16 +37,45 @@ Route::get('/a', function () {
 
     foreach($names as $name) {
         $autos = new Automation();
-        $autos = Automation::where('automation', $name)->today()->orderBy('startTime', 'desc')->first();
+
+        // Automações Diárias
+        $autos = Automation::where('automation', $name)
+                ->notInAutomation()
+                ->today()
+                ->orderBy('startTime', 'desc')
+                ->first();
 
         if($autos){
             $autos->notify(new AutomationInfo($autos));
         }else{
-            $autos = Automation::where('automation', $name)->yesterday()->orderBy('startTime', 'desc')->first();
+            $autos = Automation::where('automation', $name)
+                    ->notInAutomation()
+                    ->yesterday()
+                    ->orderBy('startTime', 'desc')
+                    ->first();
             if ($autos) {
                 $autos->notify(new AutomationError($autos));
             }
         }
+
+        //Automações não Diárias
+        $autos = Automation::where('automation', $name)
+                ->inAutomation()
+                ->orderBy('startTime', 'desc')
+                ->first();
+
+        if ($autos) {
+            $autos->notify(new AutomationInfo($autos));
+        } else {
+            $autos = Automation::where('automation', $name)
+                ->inAutomation()
+                ->orderBy('startTime', 'desc')
+                ->first();
+            if ($autos) {
+                $autos->notify(new AutomationError($autos));
+            }
+        }
+
     }
 
 

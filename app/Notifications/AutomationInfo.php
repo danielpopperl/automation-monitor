@@ -36,7 +36,7 @@ class AutomationInfo extends Notification
 
         return (new SlackMessage)
             ->warning()
-            ->to('learning')
+            ->to('general')
             ->from('Salesforce Automation', ':white_check_mark')
             ->content('*Info - Automation:* ' . $notifiable->automation)
             ->attachment(function ($attachment) use ($url, $notifiable) {

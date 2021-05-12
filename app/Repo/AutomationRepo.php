@@ -17,13 +17,9 @@ class AutomationRepo
 
         $automations = [
             'Automation' =>
-                    ['name' => 'Evento_boletoAvulso_01_embracon',
-                    'customerKey' => '558d88d0-0d1a-aa02-1e85-739a0b18a96f',
-                    'dataExtension' => '52260D91-96A5-442D-812D-C81ED6A23D91'],
-
-                    ['name' => 'Teste_relatorio_automation',
-                    'customerKey' => '339ad08a-8995-20a1-6e0d-ed96d472c1c3',
-                    'dataExtension' => 'E87464D0-0750-4DDF-8E66-C5437174D39F'],
+                    ['name' => 'PR_Aviso_Boleto_Massivo',
+                    'customerKey' => '9330a95e-f0f9-b824-49d2-377c85b58629',
+                    'dataExtension' => 'B76765BE-07C4-4CF3-A167-E177754E4778'],
 
                     ['name' => 'Automation_Import_Flat',
                     'customerKey' => 'ecfe9642-463a-fbd0-2466-c9143d70f3f4',
@@ -56,15 +52,13 @@ class AutomationRepo
 
         if($statusLogin == 200){
 
+            //GET DATA EXTENSION ROWS
             foreach($automations as $automation){
                 $dataExtension = Http::withHeaders($headerLogin)
                     ->withToken($returnLogin->access_token)
                     ->get('https://mc6ttz-frz9j0jq5lw06m-j0gd9q.rest.marketingcloudapis.com/data/v1/customobjectdata/key/'.$automation['dataExtension'].'/rowset?$page=1&$pagesize=1');
                 $bodyDE = $dataExtension->getBody()->__toString();
                 $returnDE = json_decode($bodyDE);
-
-                //dd($returnDE);
-
 
                 $urlSOAP = env('URL_AUTH_SOAP');
                 $headersSOAP = array('headers'=>[
@@ -137,7 +131,7 @@ class AutomationRepo
                     $today = date( 'Y-m-d', strtotime( now() ) );
                     $todayMinus = date( 'Y-m-d', strtotime('-1 days', strtotime(now())) );
 
-                    if ($date == $todayMinus) {
+                    if ($date == $today) {
                         $save = new Automation();
                         $save->automation = $item->Name;
                         $save->customerKey = $item->CustomerKey;
@@ -209,6 +203,8 @@ class AutomationRepo
             //         }
             //     }
             // }
-        }//FIM STATUS LOGIN = 200
+
+
+        }// FIM STATUS LOGIN = 200
     }
 }
