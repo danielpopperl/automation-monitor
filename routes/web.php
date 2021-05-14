@@ -24,7 +24,6 @@ Route::get('/a', function () {
     $name = null;
 
     foreach($automations as $automation){
-
         if(!$name) {
             $name = $automation->automation;
             array_push($names, $name);
@@ -61,7 +60,8 @@ Route::get('/a', function () {
 
         //Automações não Diárias
         $autos = Automation::where('automation', $name)
-                ->NotMonitorDaily()
+                ->today()
+                ->notMonitorDaily()
                 ->first();
 
         if ($autos) {

@@ -45,11 +45,12 @@ class Automation extends Model
     }
 
     public function scopeMonitorDaily($query) {
-        return $query->whereNotIn('automation', ['PR_Aviso_Boleto_Massivo']);
+        return $query->whereIn('automation', ['Automation_Import_Flat']);
     }
 
     public function scopeNotMonitorDaily($query) {
         return $query->whereIn('automation', ['PR_Aviso_Boleto_Massivo'])
-                     ->whereDay('startTime', '=', '2', 'or', '7', 'or', '12', 'or', '17', 'or', '11') ;
+                     ->whereDay('startTime', '=', '1', 'or', '2', 'or', '3', 'or','6', 'or','7', 'or', '8',
+                                'or','11', 'or', '12', 'or', '13', 'or', '16', 'or', '17', 'or', '18');
     }
 }
